@@ -53,7 +53,6 @@ class Buffer
 
 	void Set(int x, int y, unsigned int value)
 	{
-		std::cout << x << " " << y << std::endl;
 		buffer[(y * width) + x] = value;
 	}
 };
@@ -152,21 +151,18 @@ void RasterizeLine(int omega, Point *A, Point *B)
 	{
 		std::swap(A, B);
 	}
-	std::cout << "Rasterizing new line..." << std::endl;
 
-	for (int i = A->x; i < B->x; i++)
+	for (int i = A->x; i < (B->x + 1); i++)
 	{
 		Point *T = new Point(i, omega, 0);
 		T->z = Interpolate(T, A, B);
-		local_buffer->Set(T->x, T->y, T->z);
+		local_buffer->Set(T->x, T->y, (T->z / 9) * 255);
 		delete(T);
 	}
 }
 
 void RasterizeTop(Point *L, Point *M, Point *H)
 {
-	std::cout << "Rasterizing Top..." << std::endl;
-
 	float m_a = Slope(H, L);
 	float b_a = YIntercept(m_a, H);
 
@@ -195,8 +191,6 @@ void RasterizeTop(Point *L, Point *M, Point *H)
 
 void RasterizeBottom(Point *L, Point *M, Point *H)
 {
-	std::cout << "Rasterizing Bottom..." << std::endl;
-
 	Point *A = new Point(0, 0, 0);
 	Point *B = new Point(0, 0, 0);
 
@@ -225,8 +219,6 @@ void RasterizeBottom(Point *L, Point *M, Point *H)
 
 void RasterizeFace(std::vector<unsigned int> *face)
 {
-	std::cout << "Rasterizing new face..." << std::endl;
-
 	Point *L = new Point((*face)[0], (*face)[1], (*face)[2]);
 	Point *M = new Point((*face)[3], (*face)[4], (*face)[5]);
 	Point *H = new Point((*face)[6], (*face)[7], (*face)[8]);
@@ -259,8 +251,6 @@ void RasterizeDataToBuffer(const std::vector<unsigned int> *faces, Buffer *audio
 
 int main()
 {
-	std::cout << "starting..." << std::endl;
-
 	std::vector<unsigned int> faces = {
 		0, 0, 9, 5, 15, 1, 0, 19, 6,
 		0, 0, 9, 5, 15, 1, 14, 3, 5,
@@ -273,12 +263,9 @@ int main()
 	
 	MuseRaster::RasterizeDataToBuffer(&faces, audio_buffer);
 
-	std::cout << "Raster complete..." << std::endl;
-
 	audio_buffer->Print();
 
 	delete(audio_buffer);
 
-	std::cout << "finished. " << std::endl;
 	return 0;
 }
