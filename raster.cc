@@ -20,7 +20,12 @@ class Buffer
 	{
 		width = _width;
 		const int buff_size = width * width;
-		buffer = new unsigned int[buff_size];
+		buffer = new unsigned int[buff_size]();
+	}
+
+	~Buffer()
+	{
+		delete[](buffer);
 	}
 
 	void Clear()
@@ -48,13 +53,14 @@ class Buffer
 
 	void Set(int x, int y, unsigned int value)
 	{
+		std::cout << x << " " << y << std::endl;
 		buffer[(y * width) + x] = value;
 	}
 };
 
 namespace MuseRaster
 {
-Buffer *audio_buffer;
+Buffer *local_buffer;
 
 class Point
 {
@@ -146,17 +152,21 @@ void RasterizeLine(int omega, Point *A, Point *B)
 	{
 		std::swap(A, B);
 	}
+	std::cout << "Rasterizing new line..." << std::endl;
 
-	for (int i = A->x; i < (B->x); i++)
+	for (int i = A->x; i < B->x; i++)
 	{
 		Point *T = new Point(i, omega, 0);
 		T->z = Interpolate(T, A, B);
-		audio_buffer->Set(i, omega, T->z);
+		local_buffer->Set(T->x, T->y, T->z);
+		delete(T);
 	}
 }
 
 void RasterizeTop(Point *L, Point *M, Point *H)
 {
+	std::cout << "Rasterizing Top..." << std::endl;
+
 	float m_a = Slope(H, L);
 	float b_a = YIntercept(m_a, H);
 
@@ -185,6 +195,8 @@ void RasterizeTop(Point *L, Point *M, Point *H)
 
 void RasterizeBottom(Point *L, Point *M, Point *H)
 {
+	std::cout << "Rasterizing Bottom..." << std::endl;
+
 	Point *A = new Point(0, 0, 0);
 	Point *B = new Point(0, 0, 0);
 
@@ -213,6 +225,8 @@ void RasterizeBottom(Point *L, Point *M, Point *H)
 
 void RasterizeFace(std::vector<unsigned int> *face)
 {
+	std::cout << "Rasterizing new face..." << std::endl;
+
 	Point *L = new Point((*face)[0], (*face)[1], (*face)[2]);
 	Point *M = new Point((*face)[3], (*face)[4], (*face)[5]);
 	Point *H = new Point((*face)[6], (*face)[7], (*face)[8]);
@@ -225,9 +239,9 @@ void RasterizeFace(std::vector<unsigned int> *face)
 	delete (H);
 }
 
-Buffer *RasterizeData(const std::vector<unsigned int> *faces)
+void RasterizeDataToBuffer(const std::vector<unsigned int> *faces, Buffer *audio_buffer)
 {
-	audio_buffer = new Buffer(20);
+	local_buffer = audio_buffer;
 	int faces_amt = faces->size() / 9;
 
 	for (int face_index = 0; face_index < faces_amt; face_index++)
@@ -240,28 +254,31 @@ Buffer *RasterizeData(const std::vector<unsigned int> *faces)
 
 		delete (face);
 	}
-
-	return audio_buffer;
 }
 };
 
 int main()
 {
-	std::cout << "starting" << std::endl;
+	std::cout << "starting..." << std::endl;
 
 	std::vector<unsigned int> faces = {
-		0, 0, 9, 5, 15, 1, 0, 20, 6,
+		0, 0, 9, 5, 15, 1, 0, 19, 6,
 		0, 0, 9, 5, 15, 1, 14, 3, 5,
-		0, 0, 9, 14, 3, 5, 20, 0, 3,
-		5, 15, 1, 14, 3, 5, 20, 20, 2,
-		20, 0, 3, 14, 3, 5, 20, 20, 2,
-		0, 20, 6, 5, 15, 1, 20, 20, 2};
+		0, 0, 9, 14, 3, 5, 19, 0, 3,
+		5, 15, 1, 14, 3, 5, 19, 19, 2,
+		19, 0, 3, 14, 3, 5, 19, 19, 2,
+		0, 19, 6, 5, 15, 1, 19, 19, 2};
 
-	Buffer *new_buffer = MuseRaster::RasterizeData(&faces);
-	new_buffer->Print();
+	Buffer *audio_buffer = new Buffer(20);
+	
+	MuseRaster::RasterizeDataToBuffer(&faces, audio_buffer);
 
-	delete (new_buffer);
+	std::cout << "Raster complete..." << std::endl;
 
-	std::cout << "finished " << std::endl;
+	audio_buffer->Print();
+
+	delete(audio_buffer);
+
+	std::cout << "finished. " << std::endl;
 	return 0;
 }
